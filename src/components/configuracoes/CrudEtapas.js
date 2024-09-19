@@ -1,221 +1,289 @@
-import React, { useState, useEffect } from 'react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
-import api from '../../api/apiService';
-import CrudModalEtapa from './CrudModalEtapa';
-import DeleteConfirmationModal from '../common/DeleteConfirmationModal';
+import React, { useState, useEffect } from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
+import api from "../../api/apiService";
+import CrudModalEtapa from "./CrudModalEtapa";
+import DeleteConfirmationModal from "../common/DeleteConfirmationModal";
+import {
+  Box,
+  Button,
+  Heading,
+  Text,
+  Stack,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  NumberInput,
+  NumberInputField,
+  FormErrorMessage,
+  Flex,
+  useToast,
+  useColorMode,
+} from "@chakra-ui/react";
 
 const CrudEtapas = () => {
-    const [etapas, setEtapas] = useState([]);
-    const [editId, setEditId] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
-    const [initialValues, setInitialValues] = useState({
-        nome: '',
-        codigo: '',
-        posicao: '',
-        status: 'ativo',
+  const [etapas, setEtapas] = useState([]);
+  const [editId, setEditId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [initialValues, setInitialValues] = useState({
+    nome: "",
+    codigo: "",
+    posicao: "",
+    status: "ativo",
+  });
+  const toast = useToast();
+  const { colorMode, toggleColorMode } = useColorMode();
+
+  useEffect(() => {
+    fetchEtapas();
+  }, []);
+
+  const fetchEtapas = async () => {
+    try {
+      const response = await api.get("/etapas");
+      setEtapas(response.data);
+    } catch (error) {
+      toast({
+        title: "Erro ao buscar etapas.",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleSubmit = async (values, { resetForm }) => {
+    try {
+      const payload = {
+        ...values,
+        posicao: parseInt(values.posicao, 10), // Convertendo posicao para número inteiro
+      };
+
+      if (editId) {
+        await api.put(`/etapas/${editId}`, payload);
+      } else {
+        await api.post("/etapas", payload);
+      }
+
+      resetForm();
+      setEditId(null);
+      setIsModalOpen(false);
+      fetchEtapas();
+      toast({
+        title: `Etapa ${editId ? "atualizada" : "criada"} com sucesso!`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar etapa.",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleEdit = (etapa) => {
+    setEditId(etapa._id);
+    setInitialValues({
+      nome: etapa.nome,
+      codigo: etapa.codigo,
+      posicao: etapa.posicao,
+      status: etapa.status,
     });
+    setIsModalOpen(true);
+  };
 
-    useEffect(() => {
-        fetchEtapas();
-    }, []);
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/etapas/${id}`);
+      fetchEtapas();
+      setIsDeleteModalOpen(false);
+      toast({
+        title: "Etapa excluída com sucesso!",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir etapa.",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
-    const fetchEtapas = async () => {
-        try {
-            const response = await api.get('/etapas');
-            setEtapas(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar etapas:', error.message);
-        }
-    };
+  const confirmDelete = (etapa) => {
+    setItemToDelete(etapa);
+    setIsDeleteModalOpen(true);
+  };
 
-    const handleSubmit = async (values, { resetForm }) => {
-        try {
-            if (editId) {
-                await api.put(`/etapas/${editId}`, values);
-            } else {
-                await api.post('/etapas', values);
-            }
+  const validationSchema = Yup.object().shape({
+    nome: Yup.string().required("Nome é obrigatório"),
+    codigo: Yup.string().required("Código é obrigatório"),
+    posicao: Yup.number()
+      .required("Posição é obrigatória")
+      .positive("Posição deve ser positiva")
+      .integer("Posição deve ser um número inteiro"),
+    status: Yup.string().required("Status é obrigatório"),
+  });
 
-            resetForm();
-            setEditId(null);
-            setIsModalOpen(false);
-            fetchEtapas();
-        } catch (error) {
-            console.error('Erro ao salvar etapa:', error.message);
-        }
-    };
+  return (
+    <Box p={4} bg="gray.900" textColor="gray.100" rounded="lg" shadow="md">
+      <Heading size="lg" mb={4}>
+        Gerenciamento de Etapas
+      </Heading>
 
-    const handleEdit = (etapa) => {
-        setEditId(etapa._id);
-        setInitialValues({
-            nome: etapa.nome,
-            codigo: etapa.codigo,
-            posicao: etapa.posicao,
-            status: etapa.status,
-        });
-        setIsModalOpen(true);
-    };
+      <Button onClick={() => setIsModalOpen(true)} mb={4} colorScheme="blue">
+        Criar Nova Etapa
+      </Button>
 
-    const handleDelete = async (id) => {
-        try {
-            await api.delete(`/etapas/${id}`);
-            fetchEtapas();
-            setIsDeleteModalOpen(false);
-        } catch (error) {
-            console.error('Erro ao excluir etapa:', error.message);
-        }
-    };
+      <Stack spacing={4}>
+        {etapas.map((etapa) => (
+          <Box
+            key={etapa._id}
+            bg="gray.700"
+            p={4}
+            rounded="lg"
+            shadow="sm"
+            display="flex"
+            justifyContent="space-between"
+          >
+            <Box>
+              <Heading size="md">{etapa.nome}</Heading>
+              <Text>Código: {etapa.codigo}</Text>
+              <Text>Posição: {etapa.posicao}</Text>
+              <Text>Status: {etapa.status}</Text>
+            </Box>
+            <Flex>
+              <Button
+                onClick={() => handleEdit(etapa)}
+                colorScheme="yellow"
+                mr={2}
+              >
+                Editar
+              </Button>
+              <Button onClick={() => confirmDelete(etapa)} colorScheme="red">
+                Excluir
+              </Button>
+            </Flex>
+          </Box>
+        ))}
+      </Stack>
 
-    const confirmDelete = (etapa) => {
-        setItemToDelete(etapa);
-        setIsDeleteModalOpen(true);
-    };
+      <CrudModalEtapa
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editId ? "Editar Etapa" : "Criar Etapa"}
+      >
+        <Formik
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          enableReinitialize
+          onSubmit={handleSubmit}
+        >
+          {({ isSubmitting, values, setFieldValue, resetForm }) => (
+            <Form>
+              <FormControl mb={2} isInvalid={!!ErrorMessage.name}>
+                <FormLabel>Nome:</FormLabel>
+                <Field
+                  as={Input}
+                  name="nome"
+                  bg="gray.600"
+                  focusBorderColor="blue.500"
+                />
+                <FormErrorMessage>
+                  {<ErrorMessage name="nome" />}
+                </FormErrorMessage>
+              </FormControl>
 
-    // Validação Yup
-    const validationSchema = Yup.object().shape({
-        nome: Yup.string().required('Nome é obrigatório'),
-        codigo: Yup.string().required('Código é obrigatório'),
-        posicao: Yup.number()
-            .required('Posição é obrigatória')
-            .positive('Posição deve ser positiva')
-            .integer('Posição deve ser um número inteiro'),
-        status: Yup.string().required('Status é obrigatório'),
-    });
+              <FormControl mb={2} isInvalid={!!ErrorMessage.codigo}>
+                <FormLabel>Código:</FormLabel>
+                <Field
+                  as={Input}
+                  name="codigo"
+                  bg="gray.600"
+                  focusBorderColor="blue.500"
+                />
+                <FormErrorMessage>
+                  {<ErrorMessage name="codigo" />}
+                </FormErrorMessage>
+              </FormControl>
 
-    return (
-        <div className="p-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow">
-            <h2 className="text-2xl font-bold mb-4">Gerenciamento de Etapas</h2>
-
-            <button
-                onClick={() => {
-                    setEditId(null);
-                    setInitialValues({ nome: '', codigo: '', posicao: '', status: 'ativo' });
-                    setIsModalOpen(true);
-                }}
-                className="mb-4 bg-blue-500 text-white px-4 py-2 rounded"
-            >
-                Criar Nova Etapa
-            </button>
-
-            <ul className="space-y-4">
-                {etapas.map((etapa) => (
-                    <li key={etapa._id} className="bg-white dark:bg-gray-900 p-4 rounded-lg flex justify-between">
-                        <div>
-                            <h3 className="font-bold">{etapa.nome}</h3>
-                            <p>Código: {etapa.codigo}</p>
-                            <p>Posição: {etapa.posicao}</p>
-                            <p>Status: {etapa.status}</p>
-                        </div>
-                        <div className="flex space-x-2">
-                            <button
-                                onClick={() => handleEdit(etapa)}
-                                className="bg-yellow-500 text-white px-4 py-2 rounded"
-                            >
-                                Editar
-                            </button>
-                            <button
-                                onClick={() => confirmDelete(etapa)}
-                                className="bg-red-500 text-white px-4 py-2 rounded"
-                            >
-                                Excluir
-                            </button>
-                        </div>
-                    </li>
-                ))}
-            </ul>
-
-            <CrudModalEtapa
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={editId ? 'Editar Etapa' : 'Criar Etapa'}
-            >
-                <Formik
-                    initialValues={initialValues}
-                    validationSchema={validationSchema}
-                    enableReinitialize
-                    onSubmit={handleSubmit}
+              <FormControl mb={2} isInvalid={!!ErrorMessage.posicao}>
+                <FormLabel>Posição:</FormLabel>
+                <NumberInput
+                  min={1}
+                  value={values.posicao}
+                  onChange={(valueString, valueNumber) =>
+                    setFieldValue("posicao", valueNumber)
+                  }
                 >
-                    {({ isSubmitting, resetForm }) => (
-                        <Form>
-                            <div className="mb-2">
-                                <label className="block text-gray-700 dark:text-gray-300">Nome:</label>
-                                <Field
-                                    type="text"
-                                    name="nome"
-                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                                />
-                                <ErrorMessage name="nome" component="div" className="text-red-500" />
-                            </div>
+                  <NumberInputField bg="gray.600" focusBorderColor="blue.500" />
+                </NumberInput>
+                <FormErrorMessage>
+                  {<ErrorMessage name="posicao" />}
+                </FormErrorMessage>
+              </FormControl>
 
-                            <div className="mb-2">
-                                <label className="block text-gray-700 dark:text-gray-300">Código:</label>
-                                <Field
-                                    type="text"
-                                    name="codigo"
-                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                                />
-                                <ErrorMessage name="codigo" component="div" className="text-red-500" />
-                            </div>
+              <FormControl mb={2} isInvalid={!!ErrorMessage.status}>
+                <FormLabel>Status:</FormLabel>
+                <Field
+                  as="select"
+                  name="status"
+                  className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
+                >
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                  <option value="arquivado">Arquivado</option>
+                </Field>
+                <FormErrorMessage>
+                  <ErrorMessage name="status" />
+                </FormErrorMessage>
+              </FormControl>
 
-                            <div className="mb-2">
-                                <label className="block text-gray-700 dark:text-gray-300">Posição:</label>
-                                <Field
-                                    type="number"
-                                    name="posicao"
-                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                                />
-                                <ErrorMessage name="posicao" component="div" className="text-red-500" />
-                            </div>
+              <Flex justify="flex-end" mt={4}>
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsModalOpen(false);
+                  }}
+                  mr={2}
+                  colorScheme="gray"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  isLoading={isSubmitting}
+                  colorScheme="blue"
+                >
+                  {editId ? "Atualizar" : "Criar"}
+                </Button>
+              </Flex>
+            </Form>
+          )}
+        </Formik>
+      </CrudModalEtapa>
 
-                            <div className="mb-2">
-                                <label className="block text-gray-700 dark:text-gray-300">Status:</label>
-                                <Field
-                                    as="select"
-                                    name="status"
-                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                                >
-                                    <option value="ativo">Ativo</option>
-                                    <option value="inativo">Inativo</option>
-                                    <option value="arquivado">Arquivado</option>
-                                </Field>
-                                <ErrorMessage name="status" component="div" className="text-red-500" />
-                            </div>
-
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    type="button"
-                                    className="bg-gray-500 text-white px-4 py-2 rounded"
-                                    onClick={() => {
-                                        resetForm();
-                                        setIsModalOpen(false);
-                                    }}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="bg-blue-500 text-white px-4 py-2 rounded"
-                                >
-                                    {editId ? 'Atualizar' : 'Criar'}
-                                </button>
-                            </div>
-                        </Form>
-                    )}
-                </Formik>
-            </CrudModalEtapa>
-
-            <DeleteConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={() => handleDelete(itemToDelete._id)}
-                item={itemToDelete}
-            />
-        </div>
-    );
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => handleDelete(itemToDelete._id)}
+        item={itemToDelete}
+      />
+    </Box>
+  );
 };
 
 export default CrudEtapas;
