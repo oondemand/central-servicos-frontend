@@ -1,112 +1,109 @@
 import React, { useState, useEffect } from 'react';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import api from '../../api/apiService';
 import CrudModal from './CrudModal';
 import DeleteConfirmationModal from '../common/DeleteConfirmationModal';
 import { Alert, AlertDescription, AlertIcon, AlertTitle } from '@chakra-ui/react';
+import CrudModalEtapa from './CrudModalEtapa';
 
 const CrudEtapas = () => {
-    const [usuarios, setUsuarios] = useState([]);
-    const [nome, setNome] = useState('');
-    const [email, setEmail] = useState('');
-    const [senha, setSenha] = useState('');
-    const [status, setStatus] = useState('ativo');
+    const [etapas, setEtapas] = useState([]);
     const [editId, setEditId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
 
     useEffect(() => {
-        fetchUsuarios();
+        fetchEtapas();
     }, []);
 
-    const fetchUsuarios = async () => {
+    const fetchEtapas = async () => {
         try {
-            const response = await api.get('/usuarios');
-            setUsuarios(response.data);
+            const response = await api.get('/etapas');
+            setEtapas(response.data);
         } catch (error) {
-            console.error('Erro ao buscar usuários:', error.message);
+            console.error('Erro ao buscar etapas:', error.message);
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        const usuarioData = { nome, email, senha, status };
-
+    const handleSubmit = async (values, { resetForm }) => {
         try {
             if (editId) {
-                await api.put(`/usuarios/${editId}`, usuarioData);
+                await api.put(`/etapas/${editId}`, values);
             } else {
-                await api.post('/usuarios', usuarioData);
+                await api.post('/etapas', values);
             }
 
-            setNome('');
-            setEmail('');
-            setSenha('');
-            setStatus('ativo');
+            resetForm();
             setEditId(null);
             setIsModalOpen(false);
-            fetchUsuarios();
+            fetchEtapas();
         } catch (error) {
-            console.error('Erro ao salvar usuário:', error.message);
+            console.error('Erro ao salvar etapa:', error.message);
         }
     };
 
-    const handleEdit = (usuario) => {
-        setNome(usuario.nome);
-        setEmail(usuario.email);
-        setStatus(usuario.status);
-        setEditId(usuario._id);
+    const handleEdit = (etapa) => {
+        setEditId(etapa._id);
         setIsModalOpen(true);
     };
 
     const handleDelete = async (id) => {
         try {
-            await api.delete(`/usuarios/${id}`);
-            fetchUsuarios();
+            await api.delete(`/etapas/${id}`);
+            fetchEtapas();
             setIsDeleteModalOpen(false);
         } catch (error) {
-            console.error('Erro ao excluir usuário:', error.message);
+            console.error('Erro ao excluir etapa:', error.message);
         }
     };
 
-    const confirmDelete = (usuario) => {
-        setItemToDelete(usuario);
+    const confirmDelete = (etapa) => {
+        setItemToDelete(etapa);
         setIsDeleteModalOpen(true);
     };
 
+    // Validação Yup
+    const validationSchema = Yup.object().shape({
+        nome: Yup.string().required('Nome é obrigatório'),
+        codigo: Yup.string().required('Código é obrigatório'),
+        posicao: Yup.number()
+            .required('Posição é obrigatória')
+            .positive('Posição deve ser positiva')
+            .integer('Posição deve ser um número inteiro'),
+        status: Yup.string().required('Status é obrigatório'),
+    });
+
     return (
         <div className="p-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow">
-            <h2 className="text-2xl font-bold mb-4">Gerenciamento de Usuários</h2>
-            <Alert status='error'>
-  <AlertIcon />
-  <AlertTitle>Your browser is outdated!</AlertTitle>
-  <AlertDescription>Your Chakra experience may be degraded.</AlertDescription>
-</Alert>
+            <h2 className="text-2xl font-bold mb-4">Gerenciamento de Etapas</h2>
+
             <button
                 onClick={() => setIsModalOpen(true)}
                 className="mb-4 bg-blue-500 text-white px-4 py-2 rounded"
             >
-                Criar Novo Usuário
+                Criar Nova Etapa
             </button>
 
             <ul className="space-y-4">
-                {usuarios.map((usuario) => (
-                    <li key={usuario._id} className="bg-white dark:bg-gray-900 p-4 rounded-lg flex justify-between">
+                {etapas.map((etapa) => (
+                    <li key={etapa._id} className="bg-white dark:bg-gray-900 p-4 rounded-lg flex justify-between">
                         <div>
-                            <h3 className="font-bold">{usuario.nome}</h3>
-                            <p>Email: {usuario.email}</p>
-                            <p>Status: {usuario.status}</p>
+                            <h3 className="font-bold">{etapa.nome}</h3>
+                            <p>Código: {etapa.codigo}</p>
+                            <p>Posição: {etapa.posicao}</p>
+                            <p>Status: {etapa.status}</p>
                         </div>
                         <div className="flex space-x-2">
                             <button
-                                onClick={() => handleEdit(usuario)}
+                                onClick={() => handleEdit(etapa)}
                                 className="bg-yellow-500 text-white px-4 py-2 rounded"
                             >
                                 Editar
                             </button>
                             <button
-                                onClick={() => confirmDelete(usuario)}
+                                onClick={() => confirmDelete(etapa)}
                                 className="bg-red-500 text-white px-4 py-2 rounded"
                             >
                                 Excluir
@@ -116,55 +113,90 @@ const CrudEtapas = () => {
                 ))}
             </ul>
 
-            <CrudModal
+            <CrudModalEtapa
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={editId ? 'Editar Usuário' : 'Criar Usuário'}
+                title={editId ? 'Editar Etapa' : 'Criar Etapa'}
             >
-                <form id="modal-form" onSubmit={handleSubmit}>
-                    <div className="mb-2">
-                        <label className="block text-gray-700 dark:text-gray-300">Nome:</label>
-                        <input
-                            type="text"
-                            value={nome}
-                            onChange={(e) => setNome(e.target.value)}
-                            className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                            required
-                        />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-gray-700 dark:text-gray-300">Email:</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                            required
-                        />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-gray-700 dark:text-gray-300">Senha:</label>
-                        <input
-                            type="password"
-                            value={senha}
-                            onChange={(e) => setSenha(e.target.value)}
-                            className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                            required
-                        />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-gray-700 dark:text-gray-300">Status:</label>
-                        <select
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                            className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
-                        >
-                            <option value="ativo">Ativo</option>
-                            <option value="inativo">Inativo</option>
-                        </select>
-                    </div>
-                </form>
-            </CrudModal>
+                <Formik
+                    initialValues={{
+                        nome: '',
+                        codigo: '',
+                        posicao: '',
+                        status: 'ativo',
+                    }}
+                    validationSchema={validationSchema}
+                    onSubmit={handleSubmit}
+                >
+                    {({ isSubmitting, resetForm }) => (
+                        <Form>
+                            <div className="mb-2">
+                                <label className="block text-gray-700 dark:text-gray-300">Nome:</label>
+                                <Field
+                                    type="text"
+                                    name="nome"
+                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
+                                />
+                                <ErrorMessage name="nome" component="div" className="text-red-500" />
+                            </div>
+
+                            <div className="mb-2">
+                                <label className="block text-gray-700 dark:text-gray-300">Código:</label>
+                                <Field
+                                    type="text"
+                                    name="codigo"
+                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
+                                />
+                                <ErrorMessage name="codigo" component="div" className="text-red-500" />
+                            </div>
+
+                            <div className="mb-2">
+                                <label className="block text-gray-700 dark:text-gray-300">Posição:</label>
+                                <Field
+                                    type="number"
+                                    name="posicao"
+                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
+                                />
+                                <ErrorMessage name="posicao" component="div" className="text-red-500" />
+                            </div>
+
+                            <div className="mb-2">
+                                <label className="block text-gray-700 dark:text-gray-300">Status:</label>
+                                <Field
+                                    as="select"
+                                    name="status"
+                                    className="p-2 w-full bg-gray-200 dark:bg-gray-800 dark:text-gray-300 focus:outline-none"
+                                >
+                                    <option value="ativo">Ativo</option>
+                                    <option value="inativo">Inativo</option>
+                                    <option value="arquivado">Arquivado</option>
+                                </Field>
+                                <ErrorMessage name="status" component="div" className="text-red-500" />
+                            </div>
+
+                            <div className="flex justify-end space-x-2">
+                                <button
+                                    type="button"
+                                    className="bg-gray-500 text-white px-4 py-2 rounded"
+                                    onClick={() => {
+                                        resetForm();
+                                        setIsModalOpen(false);
+                                    }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="bg-blue-500 text-white px-4 py-2 rounded"
+                                >
+                                    {editId ? 'Atualizar' : 'Criar'}
+                                </button>
+                            </div>
+                        </Form>
+                    )}
+                </Formik>
+            </CrudModalEtapa>
 
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}
