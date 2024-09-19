@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CrudUsuarios from './CrudUsuarios';
 import CrudEmpresas from './CrudEmpresas';
+import CrudEtapas from './CrudEtapas';
 
 const ConfigTabs = () => {
     const [activeTab, setActiveTab] = useState('usuarios');
@@ -11,6 +12,8 @@ const ConfigTabs = () => {
                 return <CrudUsuarios />;
             case 'empresas':
                 return <CrudEmpresas />;
+            case 'etapas':
+                    return <CrudEtapas />;
             default:
                 return null;
         }
@@ -38,6 +41,16 @@ const ConfigTabs = () => {
                     }`}
                 >
                     Empresas
+                </button>
+                <button
+                    onClick={() => setActiveTab('etapas')}
+                    className={`ml-3 px-4 py-2 rounded ${
+                        activeTab === 'etapas' 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    }`}
+                >
+                    Etapas
                 </button>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
