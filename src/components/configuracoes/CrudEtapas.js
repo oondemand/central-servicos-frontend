@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import api from '../../api/apiService';
-import CrudModal from './CrudModal';
-import DeleteConfirmationModal from '../common/DeleteConfirmationModal';
-import { Alert, AlertDescription, AlertIcon, AlertTitle } from '@chakra-ui/react';
 import CrudModalEtapa from './CrudModalEtapa';
+import DeleteConfirmationModal from '../common/DeleteConfirmationModal';
 
 const CrudEtapas = () => {
     const [etapas, setEtapas] = useState([]);
@@ -13,6 +11,12 @@ const CrudEtapas = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [initialValues, setInitialValues] = useState({
+        nome: '',
+        codigo: '',
+        posicao: '',
+        status: 'ativo',
+    });
 
     useEffect(() => {
         fetchEtapas();
@@ -46,6 +50,12 @@ const CrudEtapas = () => {
 
     const handleEdit = (etapa) => {
         setEditId(etapa._id);
+        setInitialValues({
+            nome: etapa.nome,
+            codigo: etapa.codigo,
+            posicao: etapa.posicao,
+            status: etapa.status,
+        });
         setIsModalOpen(true);
     };
 
@@ -80,7 +90,11 @@ const CrudEtapas = () => {
             <h2 className="text-2xl font-bold mb-4">Gerenciamento de Etapas</h2>
 
             <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                    setEditId(null);
+                    setInitialValues({ nome: '', codigo: '', posicao: '', status: 'ativo' });
+                    setIsModalOpen(true);
+                }}
                 className="mb-4 bg-blue-500 text-white px-4 py-2 rounded"
             >
                 Criar Nova Etapa
@@ -119,13 +133,9 @@ const CrudEtapas = () => {
                 title={editId ? 'Editar Etapa' : 'Criar Etapa'}
             >
                 <Formik
-                    initialValues={{
-                        nome: '',
-                        codigo: '',
-                        posicao: '',
-                        status: 'ativo',
-                    }}
+                    initialValues={initialValues}
                     validationSchema={validationSchema}
+                    enableReinitialize
                     onSubmit={handleSubmit}
                 >
                     {({ isSubmitting, resetForm }) => (
