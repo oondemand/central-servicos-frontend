@@ -1,35 +1,54 @@
-import React from 'react';
+import React from "react";
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Text,
+} from "@chakra-ui/react";
 
 const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, item }) => {
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-1/3 p-6 relative">
-                <h2 className="text-2xl font-bold mb-4">Confirmação de Exclusão</h2>
-                <p>Você tem certeza que deseja excluir o seguinte item?</p>
-                <div className="mt-4">
-                    <p><strong>Nome:</strong> {item.nome}</p>
-                    {item.email && <p><strong>Email:</strong> {item.email}</p>}
-                    {item.cnpj && <p><strong>CNPJ:</strong> {item.cnpj}</p>}
-                </div>
-                <div className="mt-6 flex justify-end space-x-4">
-                    <button 
-                        onClick={onClose} 
-                        className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        onClick={onConfirm}
-                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                        Excluir
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <ModalOverlay />
+      <ModalContent bg="gray.800" color="white" mx="auto"  top="20%" position="relative">
+        <ModalHeader>Confirmação de Exclusão</ModalHeader>
+        <ModalBody>
+          {item ? (
+            <>
+              <Text>Você tem certeza que deseja excluir o seguinte item?</Text>
+              <Text mt={4}>
+                <strong>Nome:</strong> {item.nome}
+              </Text>
+              {item.email && (
+                <Text>
+                  <strong>Email:</strong> {item.email}
+                </Text>
+              )}
+              {item.cnpj && (
+                <Text>
+                  <strong>CNPJ:</strong> {item.cnpj}
+                </Text>
+              )}
+            </>
+          ) : (
+            <Text>Item não encontrado.</Text>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button colorScheme="gray" mr={3} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button colorScheme="red" onClick={onConfirm}>
+            Excluir
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
 };
 
 export default DeleteConfirmationModal;
